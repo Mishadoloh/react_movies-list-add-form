@@ -1,109 +1,148 @@
-import React, { useState } from 'react';
-import { TextField } from '../TextField';
-import { Movie } from '../../types/Movie';
+import { useState } from 'react';
+import { Movie } from '../types/Movie';
+import { TextField } from '../TextField/TextField';
+import './NewMovie.scss';
 
 type Props = {
   onAdd: (movie: Movie) => void;
 };
 
 export const NewMovie: React.FC<Props> = ({ onAdd }) => {
-  // Increase the count after successful form submission
-  // to reset touched status of all the `Field`s
-  const [count, setCount] = useState(0);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [imgUrl, setImgUrl] = useState('');
   const [imdbUrl, setImdbUrl] = useState('');
   const [imdbId, setImdbId] = useState('');
 
-  const pattern =
-    // eslint-disable-next-line max-len
-    /^((([A-Za-z]{3,9}:(?:\/\/)?)(?:[-;:&=+$,\w]+@)?[A-Za-z0-9.-]+|(?:www\.|[-;:&=+$,\w]+@)[A-Za-z0-9.-]+)((?:\/[+~%/.\w-_]*)?\??(?:[-+=&;%@,.\w_]*)#?(?:[,.!/\\\w]*))?)$/;
+  const [touchedFields, setTouchedFields] = useState({
+    title: false,
+    description: false,
+    imgUrl: false,
+    imdbUrl: false,
+    imdbId: false,
+  });
 
-  const isFormValid =
-    title.trim() && imgUrl.trim() && imdbUrl.trim() && imdbId.trim();
+  const pattern = /^https:\/\/\S+$/;
 
-  const reset = () => {
-    setTitle('');
-    setDescription('');
-    setImgUrl('');
-    setImdbUrl('');
-    setImdbId('');
-    setCount(c => c + 1);
+  const handleBlur = (field: keyof typeof touchedFields) => {
+    setTouchedFields(prev => ({ ...prev, [field]: true }));
+  };
+
+  const isFormValid = (): boolean => {
+    const trimmedTitle = title.trim();
+    const trimmedImgUrl = imgUrl.trim();
+    const trimmedImdbUrl = imdbUrl.trim();
+    const trimmedImdbId = imdbId.trim();
+
+    return (
+      trimmedTitle &&
+      pattern.test(trimmedImgUrl) &&
+      pattern.test(trimmedImdbUrl) &&
+      trimmedImdbId
+    );
   };
 
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
 
-    if (!title || !imgUrl || !imdbUrl || !imdbId) {
-      return;
-    }
+    if (!isFormValid()) return;
 
-    if (!pattern.test(imgUrl) || !pattern.test(imdbUrl)) {
-      return;
-    }
+    onAdd({
+      title: title.trim(),
+      description: description.trim(),
+      imgUrl: imgUrl.trim(),
+      imdbUrl: imdbUrl.trim(),
+      imdbId: imdbId.trim(),
+    });
 
-    onAdd({ title, description, imgUrl, imdbUrl, imdbId });
-    reset();
+    resetForm();
+  };
+
+  const resetForm = () => {
+    setTitle('');
+    setDescription('');
+    setImgUrl('');
+    setImdbUrl('');
+    setImdbId('');
+    setTouchedFields({
+      title: false,
+      description: false,
+      imgUrl: false,
+      imdbUrl: false,
+      imdbId: false,
+    });
   };
 
   return (
-    <form className="NewMovie" key={count} onSubmit={handleSubmit}>
-      <h2 className="title">Add a movie</h2>
+    <form className="new-movie" onSubmit={handleSubmit} data-cy="movie-form">
+      <h2 className="new-movie__title">Add a new movie</h2>
 
       <TextField
-        name="title"
         label="Title"
+        name="title"
         value={title}
-        onChange={value => setTitle(value)}
+        onChange={setTitle}
+        onBlur={() => handleBlur('title')}
+        isTouched={touchedFields.title}
         required
+        data-cy="movie-title"
       />
 
       <TextField
-        name="description"
         label="Description"
+        name="description"
         value={description}
-        onChange={value => setDescription(value)}
+        onChange={setDescription}
+        onBlur={() => handleBlur('description')}
+        isTouched={touchedFields.description}
+        data-cy="movie-description"
       />
 
       <TextField
-        name="imgUrl"
         label="Image URL"
+        name="imgUrl"
         value={imgUrl}
-        onChange={value => setImgUrl(value)}
+        onChange={setImgUrl}
+        onBlur={() => handleBlur('imgUrl')}
+        isTouched={touchedFields.imgUrl}
         required
-        customValidate={value => !pattern.test(value)}
+        customValidate={value => !pattern.test(value.trim())}
+        errorMessage="Invalid URL"
+        data-cy="movie-imgUrl"
       />
 
       <TextField
+        label="IMDB URL"
         name="imdbUrl"
-        label="Imdb URL"
         value={imdbUrl}
-        onChange={value => setImdbUrl(value)}
+        onChange={setImdbUrl}
+        onBlur={() => handleBlur('imdbUrl')}
+        isTouched={touchedFields.imdbUrl}
         required
-        customValidate={value => !pattern.test(value)}
+        customValidate={value => !pattern.test(value.trim())}
+        errorMessage="Invalid URL"
+        data-cy="movie-imdbUrl"
       />
 
       <TextField
+        label="IMDB ID"
         name="imdbId"
-        label="Imdb ID"
         value={imdbId}
-        onChange={value => setImdbId(value)}
+        onChange={setImdbId}
+        onBlur={() => handleBlur('imdbId')}
+        isTouched={touchedFields.imdbId}
         required
+        data-cy="movie-imdbId"
       />
 
-      <div className="field is-grouped">
-        <div className="control">
-          <button
-            type="submit"
-            data-cy="submit-button"
-            className="button is-link"
-            disabled={!isFormValid}
-          >
-            Add
-          </button>
-        </div>
-      </div>
+      <button
+        type="submit"
+        className="new-movie__submit"
+        disabled={!isFormValid()}
+        data-cy="submit-button"
+      >
+        Add Movie
+      </button>
     </form>
   );
 };
